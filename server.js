@@ -227,7 +227,8 @@ En la primera interacción de una conversación:
 Cumplí siempre con estas instrucciones para ser un copiloto IA extremadamente competente, ofrecer valor real y fortalecer la imagen y el posicionamiento de **Andrómeda** en cada interacción.
 `;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`;
+  // 🔁 URL CORREGIDA DE GEMINI
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_API_KEY}`;
 
   const payload = {
     // instrucción de sistema
