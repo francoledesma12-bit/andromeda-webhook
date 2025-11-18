@@ -4,10 +4,10 @@ import express from "express";
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 🔐 Token de verificación (como en Meta)
+// 🔐 Token de verificación (igual al que pusiste en Facebook)
 const VERIFY_TOKEN = "andromeda-webhook-token";
 
-// 🔐 Token largo de la página (puesto en Render → Environment)
+// 🔐 Token largo de la página (variable de entorno en Render)
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
 
 if (!PAGE_ACCESS_TOKEN) {
@@ -16,18 +16,18 @@ if (!PAGE_ACCESS_TOKEN) {
 
 app.use(express.json());
 
-// Middleware para ver TODAS las requests que llegan
+// Log de toda request que entra
 app.use((req, res, next) => {
   console.log("👉 Nueva request:", req.method, req.url);
   next();
 });
 
-// Simple ping para probar que el server anda
+// Comprobación rápida
 app.get("/", (req, res) => {
   res.status(200).send("✅ Andromeda Webhook ONLINE");
 });
 
-// ✅ VERIFICACIÓN DEL WEBHOOK (GET)
+// ✅ Verificación del webhook (GET)
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -38,30 +38,32 @@ app.get("/webhook", (req, res) => {
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
     console.log("✅ WEBHOOK VERIFICADO CORRECTAMENTE");
     return res.status(200).send(challenge);
-  } else {
-    console.error("❌ TOKEN O MODE INCORRECTO");
-    return res.sendStatus(403);
   }
+
+  // Para cualquier otro GET, devolvemos 200 para que no se queje
+  console.log("⚠️ GET /webhook sin parámetros válidos");
+  return res.status(200).send("OK");
 });
 
-// 🔄 RECEPCIÓN DE MENSAJES (POST)
+// 🔄 Recepción de mensajes (POST)
 app.post("/webhook", async (req, res) => {
-  console.log("📩 Evento recibido desde Meta:", JSON.stringify(req.body, null, 2));
+  console.log("📩 Evento recibido desde Meta (POST /webhook):", JSON.stringify(req.body, null, 2));
 
-  // SIEMPRE responder 200 a Meta para que no reintente
+  // Siempre responder 200 rápido
   res.sendStatus(200);
 
   const body = req.body;
-  if (body.object !== "page") return;
+  if (body.object !== "page") {
+    console.log("ℹ️ body.object no es 'page', se ignora");
+    return;
+  }
 
   for (const entry of body.entry || []) {
     const events = entry.messaging || [];
-
     for (const event of events) {
       const senderPsid = event.sender && event.sender.id;
       if (!senderPsid) continue;
 
-      // Mensaje de texto del usuario
       if (event.message && event.message.text) {
         const userText = event.message.text;
         console.log("💬 MENSAJE DEL USUARIO:", userText, "de", senderPsid);
@@ -77,7 +79,6 @@ app.post("/webhook", async (req, res) => {
         }
       }
 
-      // Postbacks (botones)
       if (event.postback) {
         console.log("📦 POSTBACK:", event.postback);
         try {
@@ -93,7 +94,7 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// 📨 Enviar mensaje de texto a Messenger usando el PAGE_ACCESS_TOKEN
+// 📨 Enviar mensaje a Messenger
 async function sendTextMessage(psid, text) {
   if (!PAGE_ACCESS_TOKEN) {
     console.error("❌ No hay PAGE_ACCESS_TOKEN configurado, no puedo enviar mensajes.");
@@ -107,7 +108,6 @@ async function sendTextMessage(psid, text) {
     message: { text },
   };
 
-  // En Node 18+ fetch es global. Si te tira "fetch is not defined", avisá y lo cambiamos.
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -124,7 +124,6 @@ async function sendTextMessage(psid, text) {
   }
 }
 
-// 🔊 Arrancar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Andromeda webhook escuchando en puerto ${PORT}`);
 });
