@@ -27,3 +27,6 @@ This project is the core backend for an Omnichannel AI Assistant, designed to pr
 
 ---
 *Created by: Franco Ledesma | Full Stack Developer & AI Solutions Architect* Andromeda.-
+
+## Diagrama de Arquitectura de la Solución
+![Circuito del Asistente de IA Omnicanal] (circuito iA.png)
